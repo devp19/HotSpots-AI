@@ -37,7 +37,7 @@ export default function Home() {
   // const pulseFactor = 1 + 0.2 * Math.sin((pulse / 500) % (2 * Math.PI));
 
   useEffect(() => {
-    fetch('/heat_points.geojson')
+    fetch('/heat_points_ml_model.geojson')
       .then(res => res.json())
       .then(data => {
         console.log("Sample feature properties:", data.features?.[0]?.properties);
@@ -47,7 +47,7 @@ export default function Home() {
 
   
   useEffect(() => {
-    fetch('/heat_points.geojson')
+    fetch('/heat_points_ml_model.geojson')
       .then(res => res.json())
       .then(data => setHeatData(data));
   }, []);
