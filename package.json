@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@types/long": "^4.0.2"
+  }
+}

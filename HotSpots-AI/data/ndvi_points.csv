@@ -1,0 +1,4 @@
+system:index,id,mean,.geo
+0,cn_tower,-0.0020058753434568644,"{""type"":""Point"",""coordinates"":[-79.3871,43.64260000000001]}"
+1,queens_park,0.05719175934791565,"{""type"":""Point"",""coordinates"":[-79.3906,43.6677]}"
+2,financial_dist,0.02517731301486492,"{""type"":""Point"",""coordinates"":[-79.3806,43.648700000000005]}"
