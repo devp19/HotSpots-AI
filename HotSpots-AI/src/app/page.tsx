@@ -14,6 +14,7 @@ const INITIAL_VIEW_STATE = {
   bearing: 0,
 };
 
+
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export default function Home() {
@@ -35,6 +36,16 @@ export default function Home() {
 
   // const pulseFactor = 1 + 0.2 * Math.sin((pulse / 500) % (2 * Math.PI));
 
+  useEffect(() => {
+    fetch('/heat_points.geojson')
+      .then(res => res.json())
+      .then(data => {
+        console.log("Sample feature properties:", data.features?.[0]?.properties);
+        setHeatData(data);
+      });
+  }, []);
+
+  
   useEffect(() => {
     fetch('/heat_points.geojson')
       .then(res => res.json())
@@ -89,7 +100,12 @@ export default function Home() {
     });
   };
 
-  const features = heatData?.features || [];
+
+
+  const features = (heatData?.features || []).filter(
+    (f: any) => f.properties.vulnerability > 0.7
+  );
+  
 
   const heatLayer = heatData
     ? new HeatmapLayer({
@@ -112,26 +128,40 @@ export default function Home() {
       })
     : null;
 
-  const circleLayer = heatData
+    const circleLayer = heatData
     ? new GeoJsonLayer({
         id: 'geojson-circles',
         data: features,
         pickable: true,
         pointType: 'circle',
-        getPointRadius: f => 100 * f.properties.vulnerability,
+        getPosition: (f: any) => {
+          const [lon, lat] = f.geometry.coordinates;
+          const jitter = () => (Math.random() - 0.5) * 0.00005; // smaller ~5m jitter
+          return [lon + jitter(), lat + jitter()];
+        },
+        getPointRadius: f => {
+          const v = f.properties.vulnerability ?? f.properties.vulnerability_score ?? 0;
+          const base = 100 * v;
+          const variation = 1 + (Math.random() - 0.5) * 0.2;
+          return base * variation;
+        },
         getFillColor: f => {
-          const v = f.properties.vulnerability;
-          if (v > 0.8) return [255, 0, 0, 200];     
-          if (v > 0.6) return [255, 128, 0, 200];    
-          return [255, 200, 100, 180];             
+          const v = f.properties.vulnerability ?? f.properties.vulnerability_score ?? 0;
+          const alpha = 180 + Math.floor(Math.random() * 50);
+          if (v > 0.8) return [255, 0, 0, alpha];
+          if (v > 0.6) return [255, 128, 0, alpha];
+          if (v > 0.4) return [255, 200, 100, alpha];
+          return [0, 0, 0, 0]; // skip low scores
         },
         getLineColor: [0, 0, 0, 0],
-        pointRadiusMinPixels: 5,
-        pointRadiusMaxPixels: 50,
+        pointRadiusMinPixels: 3,
+        pointRadiusMaxPixels: 60,
         filled: true,
         stroked: false,
       })
     : null;
+  
+  
 
   return (
     <div style={{ height: '100vh', width: '100vw', backgroundColor: '#000' }}>
