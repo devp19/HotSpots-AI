@@ -1,0 +1,86 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.95 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3849, 43.6525]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.6 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3820, 43.6535]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.8 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3835, 43.6530]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.7 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3855, 43.6528]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.5 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3840, 43.6540]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.9 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3860, 43.6532]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.4 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3830, 43.6520]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.7 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3850, 43.6535]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.6 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3825, 43.6540]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "vulnerability": 0.8 },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3845, 43.6527]
+        }
+      }
+    ]
+  }
+  
