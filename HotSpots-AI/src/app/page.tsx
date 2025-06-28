@@ -5,6 +5,7 @@ import Map, { NavigationControl } from 'react-map-gl';
 import { DeckGL } from '@deck.gl/react';
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import { GeoJsonLayer } from '@deck.gl/layers';
+import { MapContainer, TileLayer, GeoJSON, Tooltip } from 'react-leaflet';
 
 const INITIAL_VIEW_STATE = {
   latitude: 43.6532,  
@@ -16,6 +17,17 @@ const INITIAL_VIEW_STATE = {
 
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+function onEachFeature(feature: any, layer: any) {
+  if (feature.properties) {
+    let tooltipContent = `
+      <strong>Prediction:</strong> ${feature.properties.vulnerability}<br/>
+      <strong>Tree Density:</strong> ${feature.properties.tree_density}<br/>
+      <strong>Building Density:</strong> ${feature.properties.building_density}
+    `;
+    layer.bindTooltip(tooltipContent);
+  }
+}
 
 export default function Home() {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
@@ -37,7 +49,7 @@ export default function Home() {
   // const pulseFactor = 1 + 0.2 * Math.sin((pulse / 500) % (2 * Math.PI));
 
   useEffect(() => {
-    fetch('/heat_points_ml_model.geojson')
+    fetch('/heat_points_ml_model_89r2.geojson')
       .then(res => res.json())
       .then(data => {
         console.log("Sample feature properties:", data.features?.[0]?.properties);
@@ -47,7 +59,7 @@ export default function Home() {
 
   
   useEffect(() => {
-    fetch('/heat_points_ml_model.geojson')
+    fetch('/heat_points_ml_model_89r2.geojson')
       .then(res => res.json())
       .then(data => setHeatData(data));
   }, []);
@@ -196,6 +208,20 @@ export default function Home() {
           <NavigationControl position="top-left" />
         </Map>
       </DeckGL>
+      {/* <MapContainer
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+        center={{ lat: viewState.latitude, lng: viewState.longitude }}
+        zoom={viewState.zoom}
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          options={{
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }}
+        />
+        {heatData && <GeoJSON data={heatData} onEachFeature={onEachFeature} />}
+      </MapContainer> */}
     </div>
   );
 }

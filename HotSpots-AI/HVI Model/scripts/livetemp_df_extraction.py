@@ -3,7 +3,7 @@ import requests
 import time
 
 # --- Load your dataset
-df = pd.read_csv("HVI Model/data/processed/features.csv")
+df = pd.read_csv("HVI Model/data/processed/features_weighted.csv")
 
 # --- Create avg_temp column if not present
 if "avg_temp" not in df.columns:
@@ -39,9 +39,9 @@ for idx, (i, row) in enumerate(df.iterrows()):
 
     # Save progress every 10 rows
     if idx % 10 == 0:
-        df.to_csv("HVI Model/data/processed/features_with_temp_partial.csv", index=False)
+        df.to_csv("HVI Model/data/processed/features_with_temp_weighted_partial.csv", index=False)
         print("✔️ Progress saved.")
 
 # --- Final save
-df.to_csv("HVI Model/data/processed/features_with_temp.csv", index=False)
+df.to_csv("HVI Model/data/processed/features_with_temp_weighted.csv", index=False)
 print("✅ All temperatures saved!")
