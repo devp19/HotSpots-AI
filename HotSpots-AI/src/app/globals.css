@@ -63,7 +63,13 @@
     background-position: 200%;
     }
   }
-}
+  --animate-grid: grid 15s linear infinite
+;
+  @keyframes grid {
+  0% {
+    transform: translateY(-50%);}
+  100% {
+    transform: translateY(0);}}}
 
 :root {
   --radius: 0.625rem;
