@@ -168,81 +168,333 @@ export default function Visualize() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', width: '100vw', background: '#eef2f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      width: '100vw', 
+      background: '#f8f9fa',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
       <div style={{
         position: 'relative',
-        width: '90vw',
-        maxWidth: '900px',
-        height: '70vh',
-        maxHeight: '700px',
-        background: '#fff',
-        borderRadius: '18px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
-        overflow: 'hidden',
-        padding: 0,
+        width: '95vw',
+        maxWidth: '1400px',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-start',
+        gap: '24px'
       }}>
-        <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10, display: 'flex', gap: '12px' }}>
-          <button
-            style={{
-              background: '#222',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '8px 18px',
-              fontWeight: 600,
-              fontSize: '15px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-              outline: 'none',
-              transition: 'background 0.2s',
-            }}
-            onClick={() => setMode(mode === 'gradient' ? 'circle' : 'gradient')}
-          >
-            {mode === 'gradient' ? 'Visualize Data Points' : 'Show Gradient'}
-          </button>
+        {/* Title Section - Now above the map */}
+        <div style={{
+          textAlign: 'center',
+          padding: '0 16px'
+        }}>
+          <h1 style={{
+            margin: 0,
+            fontSize: '2.8rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: '#1e293b'
+          }}>
+            🔥 HotSpots AI - Vulnerability Analysis
+          </h1>
+          <p style={{
+            margin: '12px 0 0 0',
+            fontSize: '1.2rem',
+            color: '#64748b',
+            fontWeight: 400
+          }}>
+            Interactive 3D visualization of fire vulnerability hotspots in Toronto
+          </p>
         </div>
-        <DeckGL
-          initialViewState={INITIAL_VIEW_STATE}
-          controller
-          layers={[mode === 'gradient' ? heatmapLayer : scatterLayer]}
-          style={{ borderRadius: '18px' }}
-        >
-          <StaticMap
-            mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle="mapbox://styles/mapbox/standard"
-            onLoad={handleMapLoad}
-            style={{ width: '100%', height: '100%', borderRadius: '18px' }}
-          >
-            <NavigationControl position="top-left" />
-          </StaticMap>
-          {/* Tooltip for circle mode */}
-          {mode === 'circle' && tooltip && (
-            <div
-              style={{
-                position: 'absolute',
-                pointerEvents: 'none',
-                left: `${tooltip.x + 12}px`,
-                top: `${tooltip.y + 12}px`,
-                background: 'rgba(30,30,30,0.97)',
-                color: '#fff',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-                zIndex: 20,
-                minWidth: '180px',
-                lineHeight: 1.5,
-              }}
-            >
-              <div><b>Vulnerability:</b> {tooltip.vulnerability.toFixed(3)}</div>
-              <div><b>NDVI:</b> {tooltip.ndvi.toFixed(3)}</div>
-              <div><b>Building Density:</b> {tooltip.bldDensity.toFixed(3)}</div>
+
+        {/* Main Container with Black Border */}
+        <div style={{
+          height: '75vh',
+          maxHeight: '700px',
+          background: '#fff',
+          borderRadius: '24px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          overflow: 'hidden',
+          border: '3px solid #000',
+          display: 'flex',
+          flexDirection: 'row'
+        }}>
+          {/* Legend Sidebar */}
+          <div style={{
+            width: '280px',
+            background: '#f8fafc',
+            borderRight: '2px solid #000',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px'
+          }}>
+            {/* Mode Toggle */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{
+                margin: '0 0 16px 0',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                color: '#1e293b'
+              }}>
+                Visualization Mode
+              </h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  style={{
+                    flex: 1,
+                    background: mode === 'gradient' ? '#3b82f6' : '#f1f5f9',
+                    color: mode === 'gradient' ? 'white' : '#64748b',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: mode === 'gradient' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
+                  }}
+                  onClick={() => setMode('gradient')}
+                >
+                  Heatmap
+                </button>
+                <button
+                  style={{
+                    flex: 1,
+                    background: mode === 'circle' ? '#3b82f6' : '#f1f5f9',
+                    color: mode === 'circle' ? 'white' : '#64748b',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: mode === 'circle' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
+                  }}
+                  onClick={() => setMode('circle')}
+                >
+                  Points
+                </button>
+              </div>
             </div>
-          )}
-        </DeckGL>
+
+            {/* Legend */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{
+                margin: '0 0 16px 0',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                color: '#1e293b'
+              }}>
+                {mode === 'gradient' ? 'Heatmap Legend' : 'Vulnerability Levels'}
+              </h3>
+              
+              {mode === 'gradient' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '4px',
+                      background: 'linear-gradient(90deg, #00ffff, #ff0000)',
+                      border: '1px solid #e2e8f0'
+                    }} />
+                    <span style={{ fontSize: '14px', color: '#64748b' }}>Low to High Vulnerability</span>
+                  </div>
+                  <div style={{ 
+                    height: '8px', 
+                    background: 'linear-gradient(90deg, #00ffff, #64ff00, #ffff00, #ff8c00, #ff0000)',
+                    borderRadius: '4px',
+                    marginTop: '8px'
+                  }} />
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    fontSize: '12px', 
+                    color: '#64748b',
+                    marginTop: '4px'
+                  }}>
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 0, 0.8)',
+                      border: '2px solid rgba(255, 255, 0, 0.3)'
+                    }} />
+                    <span style={{ fontSize: '14px', color: '#64748b' }}>Low Risk</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: 'rgba(255, 165, 0, 0.8)',
+                      border: '2px solid rgba(255, 165, 0, 0.3)'
+                    }} />
+                    <span style={{ fontSize: '14px', color: '#64748b' }}>Medium Risk</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: 'rgba(255, 100, 0, 0.8)',
+                      border: '2px solid rgba(255, 100, 0, 0.3)'
+                    }} />
+                    <span style={{ fontSize: '14px', color: '#64748b' }}>High Risk</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Data Info */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{
+                margin: '0 0 16px 0',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                color: '#1e293b'
+              }}>
+                Data Overview
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>Total Points:</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{data.length}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>Max Vulnerability:</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
+                    {data.length > 0 ? Math.max(...data.map(d => d.weight)).toFixed(3) : '0.000'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>Avg Vulnerability:</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
+                    {data.length > 0 ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(3) : '0.000'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div style={{
+              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              borderRadius: '12px',
+              padding: '20px',
+              border: '1px solid #f59e0b'
+            }}>
+              <h4 style={{
+                margin: '0 0 12px 0',
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: '#92400e'
+              }}>
+                💡 How to Use
+              </h4>
+              <ul style={{
+                margin: 0,
+                paddingLeft: '16px',
+                fontSize: '14px',
+                color: '#92400e',
+                lineHeight: 1.5
+              }}>
+                <li>Switch between heatmap and point views</li>
+                <li>Hover over points for detailed info</li>
+                <li>Use map controls to navigate</li>
+                <li>Zoom in for 3D building view</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Map Container */}
+          <div style={{
+            flex: 1,
+            position: 'relative'
+          }}>
+            <DeckGL
+              initialViewState={INITIAL_VIEW_STATE}
+              controller
+              layers={[mode === 'gradient' ? heatmapLayer : scatterLayer]}
+              style={{ borderRadius: '0' }}
+            >
+              <StaticMap
+                mapboxAccessToken={MAPBOX_TOKEN}
+                mapStyle="mapbox://styles/mapbox/standard"
+                onLoad={handleMapLoad}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <NavigationControl position="top-left" />
+              </StaticMap>
+              {/* Tooltip for circle mode */}
+              {mode === 'circle' && tooltip && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    pointerEvents: 'none',
+                    left: `${tooltip.x + 12}px`,
+                    top: `${tooltip.y + 12}px`,
+                    background: 'rgba(30,30,30,0.97)',
+                    color: '#fff',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                    zIndex: 20,
+                    minWidth: '200px',
+                    lineHeight: 1.5,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(8px)'
+                  }}
+                >
+                  <div style={{ marginBottom: '8px', fontWeight: 600, color: '#fbbf24' }}>
+                    📍 Vulnerability Point
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#9ca3af' }}>Vulnerability:</span>
+                    <span style={{ fontWeight: 600 }}>{tooltip.vulnerability.toFixed(3)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#9ca3af' }}>NDVI:</span>
+                    <span style={{ fontWeight: 600 }}>{tooltip.ndvi.toFixed(3)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#9ca3af' }}>Building Density:</span>
+                    <span style={{ fontWeight: 600 }}>{tooltip.bldDensity.toFixed(3)}</span>
+                  </div>
+                </div>
+              )}
+            </DeckGL>
+          </div>
+        </div>
       </div>
     </div>
   );
