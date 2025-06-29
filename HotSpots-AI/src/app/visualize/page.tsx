@@ -5,6 +5,8 @@ import DeckGL from '@deck.gl/react';
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import StaticMap, { NavigationControl } from 'react-map-gl';
+import Link from 'next/link';
+import Image from 'next/image';
 
 const INITIAL_VIEW_STATE = {
   latitude: 43.6532,
@@ -37,6 +39,65 @@ export default function Visualize() {
   const [mode, setMode] = useState<'gradient' | 'circle'>('gradient');
   const [tooltip, setTooltip] = useState<TooltipInfo>(null);
   const [quantiles, setQuantiles] = useState<{q1: number, q2: number}>({q1: 0.33, q2: 0.66});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [mapContainerRef, setMapContainerRef] = useState<HTMLDivElement | null>(null);
+
+  // Toronto neighborhoods and landmarks for search
+  const searchOptions: { name: string; coords: [number, number] }[] = [
+    { name: 'Downtown Toronto', coords: [43.6532, -79.3832] },
+    { name: 'Kensington Market', coords: [43.6548, -79.4012] },
+    { name: 'Chinatown', coords: [43.6536, -79.4018] },
+    { name: 'Queen West', coords: [43.6476, -79.3984] },
+    { name: 'Yorkville', coords: [43.6702, -79.3866] },
+    { name: 'The Annex', coords: [43.6684, -79.4072] },
+    { name: 'Little Italy', coords: [43.6524, -79.4168] },
+    { name: 'Cabbagetown', coords: [43.6624, -79.3584] },
+    { name: 'Distillery District', coords: [43.6484, -79.3584] },
+    { name: 'Harbourfront', coords: [43.6344, -79.3784] },
+    { name: 'Financial District', coords: [43.6484, -79.3784] },
+    { name: 'Entertainment District', coords: [43.6444, -79.3884] },
+    { name: 'Liberty Village', coords: [43.6344, -79.4284] },
+    { name: 'Parkdale', coords: [43.6344, -79.4484] },
+    { name: 'High Park', coords: [43.6444, -79.4684] }
+  ];
+
+  const filteredOptions = searchOptions.filter(option =>
+    option.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSearch = (location: { name: string; coords: [number, number] }) => {
+    setViewState({
+      ...viewState,
+      latitude: location.coords[0],
+      longitude: location.coords[1],
+      zoom: 16
+    });
+    setSearchQuery('');
+  };
+
+  const toggleFullscreen = () => {
+    if (mapContainerRef) {
+      if (!document.fullscreenElement) {
+        mapContainerRef.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Fetch vulnerability points only
   useEffect(() => {
@@ -171,277 +232,523 @@ export default function Visualize() {
     <div style={{ 
       minHeight: '100vh', 
       width: '100vw', 
-      background: '#f8f9fa',
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      padding: '20px'
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      fontFamily: 'NeueHaasDisplay, Neue, sans-serif'
     }}>
+      {/* Modern Navigation Bar */}
       <div style={{
-        position: 'relative',
-        width: '95vw',
-        maxWidth: '1400px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px'
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        padding: '20px 32px',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000
       }}>
-        {/* Title Section - Now above the map */}
+        <div style={{ justifySelf: 'start' }}>
+          <Link href="/" style={{
+            textDecoration: 'none',
+            color: '#2a2a2a',
+            fontWeight: 600,
+            fontSize: '15px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            transition: 'all 0.3s ease',
+            border: '1.5px solid rgba(42, 42, 42, 0.1)',
+            background: 'rgba(255, 255, 255, 0.8)',
+            cursor: 'pointer'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
+            e.currentTarget.style.borderColor = '#000';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.borderColor = 'rgba(42, 42, 42, 0.1)';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
+          }}
+          >
+            ← Back to Home
+          </Link>
+        </div>
+        
+        {/* Animated Slogan */}
         <div style={{
           textAlign: 'center',
-          padding: '0 16px'
+          padding: '0 40px'
+        }}>
+          <div style={{
+            fontSize: '32px',
+            fontWeight: 700,
+            color: '#059669',
+            textShadow: '0 2px 4px rgba(5, 150, 105, 0.15)',
+            animation: 'sloganPulse 4s ease-in-out infinite',
+            letterSpacing: '-0.02em'
+          }}>
+            Mapping heat, growing green
+          </div>
+        </div>
+        
+        <div style={{
+          justifySelf: 'end'
+        }}>
+          
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{
+        padding: '40px 32px',
+        maxWidth: '1600px',
+        margin: '0 auto'
+      }}>
+        {/* Hero Section */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '48px'
         }}>
           <h1 style={{
             margin: 0,
-            fontSize: '2.8rem',
+            fontSize: 'clamp(2.5rem, 5vw, 4rem)',
             fontWeight: 700,
             letterSpacing: '-0.02em',
-            color: '#1e293b'
+            color: '#2a2a2a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '2px',
+            marginBottom: '16px'
           }}>
-            🔥 HotSpots AI - Vulnerability Analysis
+            <span>H</span>
+            <Image 
+              src="/firegif2.gif" 
+              alt="Fire" 
+              width={48} 
+              height={48}
+              style={{ objectFit: 'contain' }}
+            />
+            <span>tSpots.ai</span>
+            <span>&nbsp;</span>
+            <span style={{ fontSize: '1em', color: '#2a2a2a', fontWeight: 500 }}>- Vulnerability Analysis</span>
           </h1>
           <p style={{
-            margin: '12px 0 0 0',
-            fontSize: '1.2rem',
-            color: '#64748b',
-            fontWeight: 400
+            margin: 0,
+            fontSize: '20px',
+            color: '#666',
+            fontWeight: 400,
+            maxWidth: '600px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: 1.6
           }}>
-            Interactive 3D visualization of fire vulnerability hotspots in Toronto
+            Explore Toronto's <span style={{ color: '#ef4444', fontWeight: 600 }}>fire vulnerability</span> hotspots through interactive 3D mapping and data visualization
           </p>
         </div>
 
-        {/* Main Container with Black Border */}
+        {/* Main Visualization Container */}
         <div style={{
-          height: '75vh',
-          maxHeight: '700px',
-          background: '#fff',
+          background: 'white',
           borderRadius: '24px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
           overflow: 'hidden',
           border: '3px solid #000',
           display: 'flex',
-          flexDirection: 'row'
+          height: '75vh',
+          minHeight: '600px'
         }}>
-          {/* Legend Sidebar */}
+          {/* Modern Sidebar */}
           <div style={{
-            width: '280px',
-            background: '#f8fafc',
-            borderRight: '2px solid #000',
-            padding: '24px',
+            width: '320px',
+            background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+            borderRight: '3px solid #000',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '24px'
+            flexDirection: 'column'
           }}>
-            {/* Mode Toggle */}
             <div style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              border: '1px solid #e2e8f0'
+              padding: '32px 24px',
+              overflowY: 'auto',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px'
             }}>
-              <h3 style={{
-                margin: '0 0 16px 0',
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                color: '#1e293b'
+              {/* Mode Toggle */}
+              <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.04)'
               }}>
-                Visualization Mode
-              </h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  style={{
-                    flex: 1,
-                    background: mode === 'gradient' ? '#3b82f6' : '#f1f5f9',
-                    color: mode === 'gradient' ? 'white' : '#64748b',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: mode === 'gradient' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
-                  }}
-                  onClick={() => setMode('gradient')}
-                >
-                  Heatmap
-                </button>
-                <button
-                  style={{
-                    flex: 1,
-                    background: mode === 'circle' ? '#3b82f6' : '#f1f5f9',
-                    color: mode === 'circle' ? 'white' : '#64748b',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: mode === 'circle' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
-                  }}
-                  onClick={() => setMode('circle')}
-                >
-                  Points
-                </button>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h3 style={{
-                margin: '0 0 16px 0',
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                color: '#1e293b'
-              }}>
-                {mode === 'gradient' ? 'Heatmap Legend' : 'Vulnerability Levels'}
-              </h3>
-              
-              {mode === 'gradient' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '4px',
-                      background: 'linear-gradient(90deg, #00ffff, #ff0000)',
-                      border: '1px solid #e2e8f0'
-                    }} />
-                    <span style={{ fontSize: '14px', color: '#64748b' }}>Low to High Vulnerability</span>
-                  </div>
-                  <div style={{ 
-                    height: '8px', 
-                    background: 'linear-gradient(90deg, #00ffff, #64ff00, #ffff00, #ff8c00, #ff0000)',
-                    borderRadius: '4px',
-                    marginTop: '8px'
-                  }} />
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    fontSize: '12px', 
-                    color: '#64748b',
-                    marginTop: '4px'
-                  }}>
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
-                      background: 'rgba(255, 255, 0, 0.8)',
-                      border: '2px solid rgba(255, 255, 0, 0.3)'
-                    }} />
-                    <span style={{ fontSize: '14px', color: '#64748b' }}>Low Risk</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
-                      background: 'rgba(255, 165, 0, 0.8)',
-                      border: '2px solid rgba(255, 165, 0, 0.3)'
-                    }} />
-                    <span style={{ fontSize: '14px', color: '#64748b' }}>Medium Risk</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
-                      background: 'rgba(255, 100, 0, 0.8)',
-                      border: '2px solid rgba(255, 100, 0, 0.3)'
-                    }} />
-                    <span style={{ fontSize: '14px', color: '#64748b' }}>High Risk</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Data Info */}
-            <div style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h3 style={{
-                margin: '0 0 16px 0',
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                color: '#1e293b'
-              }}>
-                Data Overview
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Total Points:</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{data.length}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Max Vulnerability:</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
-                    {data.length > 0 ? Math.max(...data.map(d => d.weight)).toFixed(3) : '0.000'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Avg Vulnerability:</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
-                    {data.length > 0 ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(3) : '0.000'}
-                  </span>
+                <h3 style={{
+                  margin: '0 0 20px 0',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#2a2a2a',
+                  letterSpacing: '-0.01em'
+                }}>
+                  Visualization Mode
+                </h3>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    style={{
+                      flex: 1,
+                      background: mode === 'gradient' ? '#10b981' : 'white',
+                      color: mode === 'gradient' ? 'white' : '#666',
+                      border: '1.5px solid',
+                      borderColor: mode === 'gradient' ? '#10b981' : 'rgba(0,0,0,0.1)',
+                      borderRadius: '12px',
+                      padding: '14px 18px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: 'translateY(0)',
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (mode !== 'gradient') {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
+                        e.currentTarget.style.borderColor = '#ef4444';
+                        e.currentTarget.style.background = '#fef2f2';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (mode !== 'gradient') {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)';
+                        e.currentTarget.style.background = 'white';
+                      }
+                    }}
+                    onClick={() => setMode('gradient')}
+                  >
+                    Heatmap
+                  </button>
+                  <button
+                    style={{
+                      flex: 1,
+                      background: mode === 'circle' ? '#10b981' : 'white',
+                      color: mode === 'circle' ? 'white' : '#666',
+                      border: '1.5px solid',
+                      borderColor: mode === 'circle' ? '#10b981' : 'rgba(0,0,0,0.1)',
+                      borderRadius: '12px',
+                      padding: '14px 18px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: 'translateY(0)',
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (mode !== 'circle') {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
+                        e.currentTarget.style.borderColor = '#ef4444';
+                        e.currentTarget.style.background = '#fef2f2';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (mode !== 'circle') {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)';
+                        e.currentTarget.style.background = 'white';
+                      }
+                    }}
+                    onClick={() => setMode('circle')}
+                  >
+                    Points
+                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Instructions */}
-            <div style={{
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-              borderRadius: '12px',
-              padding: '20px',
-              border: '1px solid #f59e0b'
-            }}>
-              <h4 style={{
-                margin: '0 0 12px 0',
-                fontSize: '1rem',
-                fontWeight: 600,
-                color: '#92400e'
+              {/* Legend */}
+              <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.04)'
               }}>
-                💡 How to Use
-              </h4>
-              <ul style={{
-                margin: 0,
-                paddingLeft: '16px',
-                fontSize: '14px',
-                color: '#92400e',
-                lineHeight: 1.5
+                <h3 style={{
+                  margin: '0 0 20px 0',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#2a2a2a',
+                  letterSpacing: '-0.01em'
+                }}>
+                  {mode === 'gradient' ? 'Heatmap Legend' : 'Vulnerability Levels'}
+                </h3>
+                
+                {mode === 'gradient' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(90deg, #00ffff, #ff0000)',
+                        border: '1px solid rgba(0,0,0,0.1)'
+                      }} />
+                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Low to High Vulnerability</span>
+                    </div>
+                    <div style={{ 
+                      height: '12px', 
+                      background: 'linear-gradient(90deg, #00ffff, #64ff00, #ffff00, #ff8c00, #ff0000)',
+                      borderRadius: '6px',
+                      marginTop: '8px'
+                    }} />
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      fontSize: '12px', 
+                      color: '#888',
+                      marginTop: '8px',
+                      fontWeight: 500
+                    }}>
+                      <span>Low</span>
+                      <span>High</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 0, 0.8)',
+                        border: '2px solid rgba(255, 255, 0, 0.3)'
+                      }} />
+                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Low Risk</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 165, 0, 0.8)',
+                        border: '2px solid rgba(255, 165, 0, 0.3)'
+                      }} />
+                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Medium Risk</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 100, 0, 0.8)',
+                        border: '2px solid rgba(255, 100, 0, 0.3)'
+                      }} />
+                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>High Risk</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Data Overview */}
+              <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.04)'
               }}>
-                <li>Switch between heatmap and point views</li>
-                <li>Hover over points for detailed info</li>
-                <li>Use map controls to navigate</li>
-                <li>Zoom in for 3D building view</li>
-              </ul>
+                <h3 style={{
+                  margin: '0 0 20px 0',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#2a2a2a',
+                  letterSpacing: '-0.01em'
+                }}>
+                  Data Overview
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Total Points:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2a2a2a' }}>{data.length.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Max Vulnerability:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2a2a2a' }}>
+                      {data.length > 0 ? Math.max(...data.map(d => d.weight)).toFixed(3) : '0.000'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Avg Vulnerability:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2a2a2a' }}>
+                      {data.length > 0 ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(3) : '0.000'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid #f59e0b',
+                marginBottom: '24px'
+              }}>
+                <h4 style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#92400e',
+                  letterSpacing: '-0.01em'
+                }}>
+                  💡 How to Use
+                </h4>
+                <ul style={{
+                  margin: 0,
+                  paddingLeft: '20px',
+                  fontSize: '14px',
+                  color: '#92400e',
+                  lineHeight: 1.6,
+                  fontWeight: 500
+                }}>
+                  <li style={{ marginBottom: '12px' }}>• Switch between heatmap and point views</li>
+                  <li style={{ marginBottom: '12px' }}>• Hover over points for detailed info</li>
+                  <li style={{ marginBottom: '12px' }}>• Use map controls to navigate</li>
+                  <li style={{ marginBottom: '12px' }}>• Zoom in for 3D building view</li>
+                </ul>
+              </div>
             </div>
           </div>
 
           {/* Map Container */}
-          <div style={{
-            flex: 1,
-            position: 'relative'
-          }}>
+          <div 
+            ref={setMapContainerRef}
+            style={{
+              flex: 1,
+              position: 'relative',
+              background: '#f8fafc'
+            }}
+          >
+            {/* Search Bar */}
+            <div style={{
+              position: 'absolute',
+              top: '20px',
+              left: '20px',
+              zIndex: 1000,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '12px',
+              padding: '8px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              border: '1px solid rgba(0,0,0,0.1)',
+              minWidth: '280px'
+            }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Search Toronto neighborhoods..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: 'transparent',
+                    outline: 'none',
+                    color: '#2a2a2a'
+                  }}
+                />
+                {searchQuery.length > 0 && filteredOptions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1001,
+                    marginTop: '4px'
+                  }}>
+                    {filteredOptions.map((option, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleSearch(option)}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          borderBottom: index < filteredOptions.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
+                          fontSize: '14px',
+                          color: '#2a2a2a',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {option.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Fullscreen Button */}
+            <button
+              onClick={toggleFullscreen}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                zIndex: 1000,
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(0,0,0,0.1)',
+                borderRadius: '8px',
+                padding: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 6px 25px rgba(0,0,0,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+              }}
+            >
+              {isFullscreen ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+              )}
+            </button>
+
             <DeckGL
-              initialViewState={INITIAL_VIEW_STATE}
+              initialViewState={viewState}
               controller
               layers={[mode === 'gradient' ? heatmapLayer : scatterLayer]}
               style={{ borderRadius: '0' }}
@@ -454,41 +761,42 @@ export default function Visualize() {
               >
                 <NavigationControl position="top-left" />
               </StaticMap>
-              {/* Tooltip for circle mode */}
+              {/* Enhanced Tooltip */}
               {mode === 'circle' && tooltip && (
                 <div
                   style={{
                     position: 'absolute',
                     pointerEvents: 'none',
-                    left: `${tooltip.x + 12}px`,
-                    top: `${tooltip.y + 12}px`,
-                    background: 'rgba(30,30,30,0.97)',
+                    left: `${tooltip.x + 16}px`,
+                    top: `${tooltip.y + 16}px`,
+                    background: 'rgba(42, 42, 42, 0.95)',
                     color: '#fff',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
+                    padding: '16px 20px',
+                    borderRadius: '16px',
                     fontSize: '14px',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
                     zIndex: 20,
-                    minWidth: '200px',
-                    lineHeight: 1.5,
+                    minWidth: '240px',
+                    lineHeight: 1.6,
                     border: '1px solid rgba(255,255,255,0.1)',
-                    backdropFilter: 'blur(8px)'
+                    backdropFilter: 'blur(12px)',
+                    fontFamily: 'NeueHaasDisplay, Neue, sans-serif'
                   }}
                 >
-                  <div style={{ marginBottom: '8px', fontWeight: 600, color: '#fbbf24' }}>
+                  <div style={{ marginBottom: '12px', fontWeight: 600, color: '#fbbf24', fontSize: '15px' }}>
                     📍 Vulnerability Point
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ color: '#9ca3af' }}>Vulnerability:</span>
-                    <span style={{ fontWeight: 600 }}>{tooltip.vulnerability.toFixed(3)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#9ca3af', fontWeight: 500 }}>Vulnerability:</span>
+                    <span style={{ fontWeight: 600, color: '#fff' }}>{tooltip.vulnerability.toFixed(3)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ color: '#9ca3af' }}>NDVI:</span>
-                    <span style={{ fontWeight: 600 }}>{tooltip.ndvi.toFixed(3)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#9ca3af', fontWeight: 500 }}>NDVI:</span>
+                    <span style={{ fontWeight: 600, color: '#fff' }}>{tooltip.ndvi.toFixed(3)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#9ca3af' }}>Building Density:</span>
-                    <span style={{ fontWeight: 600 }}>{tooltip.bldDensity.toFixed(3)}</span>
+                    <span style={{ color: '#9ca3af', fontWeight: 500 }}>Building Density:</span>
+                    <span style={{ fontWeight: 600, color: '#fff' }}>{tooltip.bldDensity.toFixed(3)}</span>
                   </div>
                 </div>
               )}
@@ -496,6 +804,20 @@ export default function Visualize() {
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @font-face {
+          font-family: 'NeueHaasDisplay';
+          src: url('/fonts/NeueHaasDisplayMediu.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        @keyframes sloganPulse {
+          0%, 100% { opacity: 0.8; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.02); }
+        }
+      `}</style>
     </div>
   );
 } 
