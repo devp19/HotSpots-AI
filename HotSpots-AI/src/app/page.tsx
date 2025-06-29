@@ -176,7 +176,7 @@ export default function Home() {
         >
           Explore urban heat vulnerability and tree planting priorities in Toronto for sustainable development.
         </TextAnimate>
-        <div style={{ display: 'flex', flexDirection: 'row', gap: 16, marginBottom: 24 }}>
+        <div className="landing-btn-row" style={{ display: 'flex', flexDirection: 'row', gap: 16, marginBottom: 24 }}>
           <a href="/visualize" style={{ textDecoration: 'none' }}>
             <InteractiveHoverButton style={{ border: '1.2px solid #2a2a2a' }}>
               View 3D City Map Visualization
@@ -291,7 +291,7 @@ export default function Home() {
         <p className="text-lg text-[#444] mb-8 mt-2">
           TLDR; Check for trees and building density around a specific location. Mix it in with temperatures and some special ML magic and you get a heat vulnerability score.
         </p>
-        <div className="-ml-20 w-full">
+        <div className="-ml-20 w-full animated-beam-responsive">
           <AnimatedBeamMultipleOutputDemo />
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-8">
@@ -390,6 +390,22 @@ export default function Home() {
           80% { transform: scale(1, 1.02) rotate(-2deg); filter: brightness(1.05); }
           90% { transform: scale(1.04, 0.98) rotate(2deg); filter: brightness(1.15); }
           100% { transform: scale(1) rotate(-2deg); filter: brightness(1.05); }
+        }
+        @media (max-width: 900px) {
+          .animated-beam-responsive {
+            display: none !important;
+          }
+          .landing-btn-row {
+            gap: 8px !important;
+          }
+          .landing-btn-row a > *, .landing-btn-row button, .landing-btn-row .bg-\[\#f86d10\] {
+            font-size: 13px !important;
+            padding: 7px 14px !important;
+            border-radius: 18px !important;
+            min-width: 0 !important;
+            height: 36px !important;
+            line-height: 1.1 !important;
+          }
         }
       `}</style>
     </div>

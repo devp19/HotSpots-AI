@@ -7,11 +7,13 @@ import { ScatterplotLayer } from '@deck.gl/layers';
 import StaticMap, { NavigationControl } from 'react-map-gl';
 import Link from 'next/link';
 import Image from 'next/image';
+import { InteractiveHoverButton } from '@/components/magicui/interactive-hover-button';
+import { AnimatedSubscribeButton } from '@/components/magicui/animated-subscribe-button';
 
 const INITIAL_VIEW_STATE = {
   latitude: 43.6532,
   longitude: -79.3832,
-  zoom: 14.5,
+  zoom: 16,
   pitch: 60,
   bearing: 0,
 };
@@ -34,15 +36,29 @@ type TooltipInfo = {
   vulnerability: number;
 } | null;
 
+function formatTime(date: Date) {
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  const mins = minutes < 10 ? '0' + minutes : minutes;
+  return `${hours}:${mins} ${ampm}`;
+}
+
 export default function Visualize() {
   const [data, setData] = useState<PointData[]>([]);
-  const [mode, setMode] = useState<'gradient' | 'circle'>('gradient');
+  const [mode, setMode] = useState<'gradient' | 'circle'>('circle');
   const [tooltip, setTooltip] = useState<TooltipInfo>(null);
   const [quantiles, setQuantiles] = useState<{q1: number, q2: number}>({q1: 0.33, q2: 0.66});
   const [searchQuery, setSearchQuery] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [mapContainerRef, setMapContainerRef] = useState<HTMLDivElement | null>(null);
+  const [lastUpdated, setLastUpdated] = useState(() => {
+    const now = new Date();
+    return now;
+  });
 
   const searchOptions: { name: string; coords: [number, number] }[] = [
     { name: 'Downtown Toronto', coords: [43.6532, -79.3832] },
@@ -226,73 +242,87 @@ export default function Visualize() {
       minHeight: '100vh', 
       width: '100vw', 
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      fontFamily: 'NeueHaasDisplay, Neue, sans-serif'
+      fontFamily: 'NeueHaasDisplay, Neue, sans-serif',
+      position: 'relative',
+      margin: 0,
+      padding: 0
     }}>
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
-        padding: '20px 32px',
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000
+      <div className="visualize-back-btn">
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <InteractiveHoverButton style={{ margin: '24px 0 0 24px', padding: '12px 24px', fontWeight: 600, fontSize: '16px', borderRadius: '12px' }}>
+            Back
+          </InteractiveHoverButton>
+        </Link>
+      </div>
+
+      <div className="visualize-hero" style={{
+        textAlign: 'center',
+        marginBottom: '48px',
+        display: 'none'
       }}>
-        <div style={{ justifySelf: 'start' }}>
-          <Link href="/" style={{
-            textDecoration: 'none',
-            color: '#2a2a2a',
-            fontWeight: 600,
-            fontSize: '15px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 20px',
-            borderRadius: '12px',
-            transition: 'all 0.3s ease',
-            border: '1.5px solid rgba(42, 42, 42, 0.1)',
-            background: 'rgba(255, 255, 255, 0.8)',
-            cursor: 'pointer'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
-            e.currentTarget.style.borderColor = '#000';
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'none';
-            e.currentTarget.style.borderColor = 'rgba(42, 42, 42, 0.1)';
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
-          }}
-          >
-            ← Back to Home
-          </Link>
-        </div>
-        
-        <div style={{
-          textAlign: 'center',
-          padding: '0 40px'
+        {/* Only visible on mobile via CSS */}
+        <h1 style={{
+          margin: 0,
+          fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          color: '#2a2a2a',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '2px',
+          marginBottom: '16px'
         }}>
-          <div style={{
-            fontSize: '32px',
-            fontWeight: 700,
-            color: '#059669',
-            textShadow: '0 2px 4px rgba(5, 150, 105, 0.15)',
-            animation: 'sloganPulse 4s ease-in-out infinite',
-            letterSpacing: '-0.02em'
-          }}>
-            Mapping heat, growing green
+          <span>H</span>
+          <Image 
+            src="/firegif2.gif" 
+            alt="Fire" 
+            width={28} 
+            height={28}
+            style={{ objectFit: 'contain' }}
+          />
+          <span style={{ color: '#2a2a2a' }}>tSpots</span>
+          <span className="ai-grey">.ai</span>
+        </h1>
+        <span className="toronto-mobile">View 3D City Map Visualization on a larger screen!</span>
+      </div>
+
+      {/* Desktop Hero */}
+      <div className="visualize-desktop-hero">
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '16px',
+          width: '100%'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '2.5rem', fontWeight: 700, color: '#2a2a2a', letterSpacing: '-0.02em', marginTop: '64px' }}>
+            <span style={{ color: '#2a2a2a' }}>H</span>
+            <Image 
+              src="/firegif2.gif" 
+              alt="Fire" 
+              width={32} 
+              height={32}
+              style={{ objectFit: 'contain' }}
+            />
+            <span style={{ color: '#2a2a2a' }}>tSpots</span>
+            <span className="ai-grey">.ai</span>
           </div>
-        </div>
-        
-        <div style={{
-          justifySelf: 'end'
-        }}>
-          
+          <div style={{
+            marginTop: '8px',
+            fontSize: '1.1rem',
+            color: '#888',
+            fontWeight: 300,
+            textAlign: 'center',
+            letterSpacing: '-0.01em',
+            fontFamily: 'NeueHaasDisplay, Neue, sans-serif',
+            maxWidth: '600px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}>
+            Vulnerability Analysis - Explore Toronto's heat vulnerability hotspots through interactive 3D mapping and data visualization!
+          </div>
         </div>
       </div>
 
@@ -302,176 +332,168 @@ export default function Visualize() {
         margin: '0 auto'
       }}>
         <div style={{
-          textAlign: 'center',
-          marginBottom: '48px'
-        }}>
-          <h1 style={{
-            margin: 0,
-            fontSize: 'clamp(2.5rem, 5vw, 4rem)',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: '#2a2a2a',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '2px',
-            marginBottom: '16px'
-          }}>
-            <span>H</span>
-            <Image 
-              src="/firegif2.gif" 
-              alt="Fire" 
-              width={48} 
-              height={48}
-              style={{ objectFit: 'contain' }}
-            />
-            <span>tSpots.ai</span>
-            <span>&nbsp;</span>
-            <span style={{ fontSize: '1em', color: '#2a2a2a', fontWeight: 500 }}>- Vulnerability Analysis</span>
-          </h1>
-          <p style={{
-            margin: 0,
-            fontSize: '20px',
-            color: '#666',
-            fontWeight: 400,
-            maxWidth: '600px',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            lineHeight: 1.6
-          }}>
-            Explore Toronto's <span style={{ color: '#ef4444', fontWeight: 600 }}>fire vulnerability</span> hotspots through interactive 3D mapping and data visualization
-          </p>
-        </div>
-
-        <div style={{
           background: 'white',
-          borderRadius: '24px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
+          borderRadius: '20px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
           overflow: 'hidden',
-          border: '3px solid #000',
+          border: 'none',
           display: 'flex',
-          height: '75vh',
-          minHeight: '600px'
+          height: '68vh',
+          minHeight: '520px',
+          maxWidth: '1250px',
+          margin: '0 auto'
         }}>
           <div style={{
-            width: '320px',
-            background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
-            borderRight: '3px solid #000',
+            width: '300px',
+            background: 'rgba(42, 42, 42, 0.95)',
+            borderRight: '1px solid #374151',
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <div style={{
-              padding: '32px 24px',
+            <div className="sidebar-scroll-hide" style={{
+              padding: '18px 10px',
               overflowY: 'auto',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               gap: '24px'
             }}>
-              <div style={{
-                background: 'white',
+              <div className="sidebar-fade-border" style={{
+                background: 'rgba(42, 42, 42, 0.95)',
                 borderRadius: '16px',
                 padding: '24px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                border: '1px solid rgba(0,0,0,0.04)'
+                boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+                border: '1px solid #374151',
+                transition: 'border-color 0.25s',
+                cursor: 'pointer'
               }}>
                 <h3 style={{
                   margin: '0 0 20px 0',
                   fontSize: '16px',
                   fontWeight: 600,
-                  color: '#2a2a2a',
+                  color: '#F86D10',
                   letterSpacing: '-0.01em'
                 }}>
-                  Visualization Mode
+                  Data Overview
                 </h3>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    style={{
-                      flex: 1,
-                      background: mode === 'gradient' ? '#10b981' : 'white',
-                      color: mode === 'gradient' ? 'white' : '#666',
-                      border: '1.5px solid',
-                      borderColor: mode === 'gradient' ? '#10b981' : 'rgba(0,0,0,0.1)',
-                      borderRadius: '12px',
-                      padding: '14px 18px',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: 'translateY(0)',
-                      textAlign: 'center'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (mode !== 'gradient') {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
-                        e.currentTarget.style.borderColor = '#ef4444';
-                        e.currentTarget.style.background = '#fef2f2';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (mode !== 'gradient') {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)';
-                        e.currentTarget.style.background = 'white';
-                      }
-                    }}
-                    onClick={() => setMode('gradient')}
-                  >
-                    Heatmap
-                  </button>
-                  <button
-                    style={{
-                      flex: 1,
-                      background: mode === 'circle' ? '#10b981' : 'white',
-                      color: mode === 'circle' ? 'white' : '#666',
-                      border: '1.5px solid',
-                      borderColor: mode === 'circle' ? '#10b981' : 'rgba(0,0,0,0.1)',
-                      borderRadius: '12px',
-                      padding: '14px 18px',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: 'translateY(0)',
-                      textAlign: 'center'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (mode !== 'circle') {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
-                        e.currentTarget.style.borderColor = '#ef4444';
-                        e.currentTarget.style.background = '#fef2f2';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (mode !== 'circle') {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)';
-                        e.currentTarget.style.background = 'white';
-                      }
-                    }}
-                    onClick={() => setMode('circle')}
-                  >
-                    Points
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>Total Points:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{data.length.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>Max Vulnerability:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                      {data.length > 0 ? Math.max(...data.map(d => d.weight)).toFixed(3) : '0.000'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>Avg Vulnerability:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                      {data.length > 0 ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(3) : '0.000'}
+                    </span>
+                  </div>
+                </div>
+                <div style={{
+                  marginTop: '18px',
+                  fontSize: '13px',
+                  color: '#888',
+                  textAlign: 'left',
+                  fontWeight: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px'
+                }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#10b981',
+                    marginRight: '2px',
+                  }} />
+                  Last updated: {formatTime(lastUpdated)}
                 </div>
               </div>
 
               <div style={{
-                background: 'white',
+                background: 'rgba(42, 42, 42, 0.95)',
                 borderRadius: '16px',
-                padding: '24px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                border: '1px solid rgba(0,0,0,0.04)'
+                padding: '14px',
+                boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+                border: '1px solid #374151',
+                transition: 'border-color 0.25s',
+                cursor: 'pointer'
               }}>
                 <h3 style={{
                   margin: '0 0 20px 0',
                   fontSize: '16px',
                   fontWeight: 600,
-                  color: '#2a2a2a',
+                  color: '#F86D10',
+                  letterSpacing: '-0.01em'
+                }}>
+                  Visualization Mode
+                </h3>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <AnimatedSubscribeButton
+                    className="visualization-mode-btn"
+                    subscribeStatus={mode === 'gradient'}
+                    onClick={() => setMode('gradient')}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: '10px',
+                      padding: 0,
+                      background: mode === 'gradient' ? '#F86D10' : '#2a2a2a',
+                      color: mode === 'gradient' ? '#2a2a2a' : '#bdbdbd',
+                      border: mode === 'gradient' ? '2px solid #F86D10' : '2px solid #232323',
+                      boxShadow: mode === 'gradient' ? '0 4px 16px rgba(248,109,16,0.12)' : '0 2px 8px rgba(0,0,0,0.10)',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      height: '40px',
+                    }}
+                  >
+                    <span>Heatmap</span>
+                    <span>Heatmap</span>
+                  </AnimatedSubscribeButton>
+                  <AnimatedSubscribeButton
+                    className="visualization-mode-btn"
+                    subscribeStatus={mode === 'circle'}
+                    onClick={() => setMode('circle')}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: '10px',
+                      padding: 0,
+                      background: mode === 'circle' ? '#F86D10' : '#2a2a2a',
+                      color: mode === 'circle' ? '#2a2a2a' : '#bdbdbd',
+                      border: mode === 'circle' ? '2px solid #F86D10' : '2px solid #232323',
+                      boxShadow: mode === 'circle' ? '0 4px 16px rgba(248,109,16,0.12)' : '0 2px 8px rgba(0,0,0,0.10)',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      height: '40px',
+                    }}
+                  >
+                    <span>Points</span>
+                    <span>Points</span>
+                  </AnimatedSubscribeButton>
+                </div>
+              </div>
+
+              <div className="sidebar-fade-border" style={{
+                background: 'rgba(42, 42, 42, 0.95)',
+                borderRadius: '16px',
+                padding: '24px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                border: '1px solid #d1d5db',
+                transition: 'border-color 0.25s',
+                cursor: 'pointer'
+              }}>
+                <h3 style={{
+                  margin: '0 0 20px 0',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#F86D10',
                   letterSpacing: '-0.01em'
                 }}>
                   {mode === 'gradient' ? 'Heatmap Legend' : 'Vulnerability Levels'}
@@ -480,14 +502,7 @@ export default function Visualize() {
                 {mode === 'gradient' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '6px',
-                        background: 'linear-gradient(90deg, #00ffff, #ff0000)',
-                        border: '1px solid rgba(0,0,0,0.1)'
-                      }} />
-                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Low to High Vulnerability</span>
+                      <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>Low to High Vulnerability</span>
                     </div>
                     <div style={{ 
                       height: '12px', 
@@ -517,7 +532,7 @@ export default function Visualize() {
                         background: 'rgba(255, 255, 0, 0.8)',
                         border: '2px solid rgba(255, 255, 0, 0.3)'
                       }} />
-                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Low Risk</span>
+                      <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>Low Risk</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
@@ -527,7 +542,7 @@ export default function Visualize() {
                         background: 'rgba(255, 165, 0, 0.8)',
                         border: '2px solid rgba(255, 165, 0, 0.3)'
                       }} />
-                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Medium Risk</span>
+                      <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>Medium Risk</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
@@ -537,77 +552,10 @@ export default function Visualize() {
                         background: 'rgba(255, 100, 0, 0.8)',
                         border: '2px solid rgba(255, 100, 0, 0.3)'
                       }} />
-                      <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>High Risk</span>
+                      <span style={{ fontSize: '14px', color: '#9ca3af', fontWeight: 500 }}>High Risk</span>
                     </div>
                   </div>
                 )}
-              </div>
-
-              <div style={{
-                background: 'white',
-                borderRadius: '16px',
-                padding: '24px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                border: '1px solid rgba(0,0,0,0.04)'
-              }}>
-                <h3 style={{
-                  margin: '0 0 20px 0',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#2a2a2a',
-                  letterSpacing: '-0.01em'
-                }}>
-                  Data Overview
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Total Points:</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2a2a2a' }}>{data.length.toLocaleString()}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Max Vulnerability:</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2a2a2a' }}>
-                      {data.length > 0 ? Math.max(...data.map(d => d.weight)).toFixed(3) : '0.000'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>Avg Vulnerability:</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#2a2a2a' }}>
-                      {data.length > 0 ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(3) : '0.000'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                borderRadius: '16px',
-                padding: '24px',
-                border: '1px solid #f59e0b',
-                marginBottom: '24px'
-              }}>
-                <h4 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#92400e',
-                  letterSpacing: '-0.01em'
-                }}>
-                  💡 How to Use
-                </h4>
-                <ul style={{
-                  margin: 0,
-                  paddingLeft: '20px',
-                  fontSize: '14px',
-                  color: '#92400e',
-                  lineHeight: 1.6,
-                  fontWeight: 500
-                }}>
-                  <li style={{ marginBottom: '12px' }}>• Switch between heatmap and point views</li>
-                  <li style={{ marginBottom: '12px' }}>• Hover over points for detailed info</li>
-                  <li style={{ marginBottom: '12px' }}>• Use map controls to navigate</li>
-                  <li style={{ marginBottom: '12px' }}>• Zoom in for 3D building view</li>
-                </ul>
               </div>
             </div>
           </div>
@@ -620,74 +568,6 @@ export default function Visualize() {
               background: '#f8fafc'
             }}
           >
-            <div style={{
-              position: 'absolute',
-              top: '20px',
-              left: '20px',
-              zIndex: 1000,
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '12px',
-              padding: '8px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-              border: '1px solid rgba(0,0,0,0.1)',
-              minWidth: '280px'
-            }}>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  placeholder="Search Toronto neighborhoods..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    background: 'transparent',
-                    outline: 'none',
-                    color: '#2a2a2a'
-                  }}
-                />
-                {searchQuery.length > 0 && filteredOptions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    zIndex: 1001,
-                    marginTop: '4px'
-                  }}>
-                    {filteredOptions.map((option, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleSearch(option)}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          borderBottom: index < filteredOptions.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
-                          fontSize: '14px',
-                          color: '#2a2a2a',
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        {option.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
             <button
               onClick={toggleFullscreen}
               style={{
@@ -747,8 +627,8 @@ export default function Visualize() {
                   style={{
                     position: 'absolute',
                     pointerEvents: 'none',
-                    left: `${tooltip.x + 16}px`,
-                    top: `${tooltip.y + 16}px`,
+                    right: '20px',
+                    bottom: '20px',
                     background: 'rgba(42, 42, 42, 0.95)',
                     color: '#fff',
                     padding: '16px 20px',
@@ -763,7 +643,7 @@ export default function Visualize() {
                     fontFamily: 'NeueHaasDisplay, Neue, sans-serif'
                   }}
                 >
-                  <div style={{ marginBottom: '12px', fontWeight: 600, color: '#fbbf24', fontSize: '15px' }}>
+                  <div style={{ marginBottom: '12px', fontWeight: 600, color: '#F86D10', fontSize: '15px' }}>
                     📍 Vulnerability Point
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -796,6 +676,76 @@ export default function Visualize() {
         @keyframes sloganPulse {
           0%, 100% { opacity: 0.8; transform: scale(1); }
           50% { opacity: 1; transform: scale(1.02); }
+        }
+        .mobile-overlay {
+          display: none;
+        }
+        @media (max-width: 900px) {
+          .visualize-hero {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 100vh !important;
+            margin-bottom: 0 !important;
+          }
+          .visualize-hero ~ * {
+            display: none !important;
+          }
+          body > div > div:not(.visualize-hero) {
+            display: none !important;
+          }
+          body > div > .visualize-hero {
+            display: flex !important;
+          }
+          .visualize-hero .toronto-mobile {
+            display: block !important;
+            margin-top: 0.5em;
+            font-size: 0.9em;
+            color: #888;
+            font-weight: 200;
+            letter-spacing: 0.01em;
+          }
+          .visualize-desktop-hero {
+            display: none !important;
+          }
+        }
+        @media (min-width: 901px) {
+          .visualize-back-btn {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1001;
+          }
+          .visualize-desktop-hero {
+            display: block !important;
+            width: 100%;
+          }
+        }
+        html, body, #__next, body > div:first-child {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .ai-grey {
+          color: #888;
+          font-size: 0.7em;
+          font-weight: 500;
+          margin-left: 2px;
+          letter-spacing: 0;
+          vertical-align: middle;
+          position: relative;
+          top: 4px;
+          left: -2px;
+        }
+        .sidebar-fade-border:hover {
+          border-color: #f3f4f6 !important;
+        }
+        .visualization-mode-btn {
+          transition: border-color 0.22s, box-shadow 0.22s;
+        }
+        .visualization-mode-btn:hover {
+          border-color: #fff !important;
+          box-shadow: 0 0 0 2px #fff2;
         }
       `}</style>
     </div>
