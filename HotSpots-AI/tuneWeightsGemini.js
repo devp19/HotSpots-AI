@@ -4,9 +4,10 @@ import { GoogleGenAI }   from '@google/genai';
 
 const require = createRequire(import.meta.url);
 const samples = require('./samples.json');
+const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 async function main() {
-  const ai = new GoogleGenAI({ apiVersion: 'v1' });  // assumes GEMINI_API_KEY is set
+  const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
 
   const prompt = `
 Here are some zones:
