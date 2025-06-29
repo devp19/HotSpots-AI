@@ -44,7 +44,6 @@ export default function Visualize() {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [mapContainerRef, setMapContainerRef] = useState<HTMLDivElement | null>(null);
 
-  // Toronto neighborhoods and landmarks for search
   const searchOptions: { name: string; coords: [number, number] }[] = [
     { name: 'Downtown Toronto', coords: [43.6532, -79.3832] },
     { name: 'Kensington Market', coords: [43.6548, -79.4012] },
@@ -89,7 +88,6 @@ export default function Visualize() {
     }
   };
 
-  // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -99,7 +97,6 @@ export default function Visualize() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Fetch vulnerability points only
   useEffect(() => {
     fetch('/vulnerability_points.geojson')
       .then((res) => res.json())
@@ -112,7 +109,6 @@ export default function Visualize() {
           vulnerability: f.properties.vulnerability,
         }));
         setData(pts);
-        // Compute quantiles for coloring
         if (pts.length > 0) {
           const sorted = [...pts].sort((a, b) => a.weight - b.weight);
           const q1 = sorted[Math.floor(0.33 * sorted.length)]?.weight ?? 0.33;
@@ -123,7 +119,6 @@ export default function Visualize() {
       .catch(console.error);
   }, []);
 
-  // Heatmap layer (gradient)
   const heatmapLayer = new HeatmapLayer<PointData>({
     id: 'hot-spots-heatmap',
     data,
@@ -144,17 +139,16 @@ export default function Visualize() {
     colorDomain: [0, Math.max(...data.map((d) => d.weight), 1)],
   });
 
-  // 2D circle layer (Scatterplot)
   const scatterLayer = new ScatterplotLayer<PointData>({
     id: 'hot-spots-circles',
     data,
     getPosition: (d) => d.position,
-    getRadius: (d) => 80 + 200 * d.weight, // scale by vulnerability
+    getRadius: (d) => 80 + 200 * d.weight, 
     getFillColor: (d) => {
       const v = d.weight;
-      if (v < quantiles.q1) return [255, 255, 0, 180]; // yellow
-      if (v < quantiles.q2) return [255, 165, 0, 200]; // orange
-      return [255, 100, 0, 220]; // dark orange
+      if (v < quantiles.q1) return [255, 255, 0, 180];
+      if (v < quantiles.q2) return [255, 165, 0, 200]; 
+      return [255, 100, 0, 220]; 
     },
     pickable: true,
     radiusMinPixels: 4,
@@ -176,7 +170,6 @@ export default function Visualize() {
     },
   });
 
-  // 3D buildings extrusion (unchanged)
   const handleMapLoad = useCallback((event: any) => {
     const map = event.target;
     map.once('style.load', () => {
@@ -235,7 +228,6 @@ export default function Visualize() {
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       fontFamily: 'NeueHaasDisplay, Neue, sans-serif'
     }}>
-      {/* Modern Navigation Bar */}
       <div style={{
         background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(20px)',
@@ -281,7 +273,6 @@ export default function Visualize() {
           </Link>
         </div>
         
-        {/* Animated Slogan */}
         <div style={{
           textAlign: 'center',
           padding: '0 40px'
@@ -305,13 +296,11 @@ export default function Visualize() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div style={{
         padding: '40px 32px',
         maxWidth: '1600px',
         margin: '0 auto'
       }}>
-        {/* Hero Section */}
         <div style={{
           textAlign: 'center',
           marginBottom: '48px'
@@ -354,7 +343,6 @@ export default function Visualize() {
           </p>
         </div>
 
-        {/* Main Visualization Container */}
         <div style={{
           background: 'white',
           borderRadius: '24px',
@@ -365,7 +353,6 @@ export default function Visualize() {
           height: '75vh',
           minHeight: '600px'
         }}>
-          {/* Modern Sidebar */}
           <div style={{
             width: '320px',
             background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -381,7 +368,6 @@ export default function Visualize() {
               flexDirection: 'column',
               gap: '24px'
             }}>
-              {/* Mode Toggle */}
               <div style={{
                 background: 'white',
                 borderRadius: '16px',
@@ -474,7 +460,6 @@ export default function Visualize() {
                 </div>
               </div>
 
-              {/* Legend */}
               <div style={{
                 background: 'white',
                 borderRadius: '16px',
@@ -558,7 +543,6 @@ export default function Visualize() {
                 )}
               </div>
 
-              {/* Data Overview */}
               <div style={{
                 background: 'white',
                 borderRadius: '16px',
@@ -595,7 +579,6 @@ export default function Visualize() {
                 </div>
               </div>
 
-              {/* Instructions */}
               <div style={{
                 background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
                 borderRadius: '16px',
@@ -629,7 +612,6 @@ export default function Visualize() {
             </div>
           </div>
 
-          {/* Map Container */}
           <div 
             ref={setMapContainerRef}
             style={{
@@ -638,7 +620,6 @@ export default function Visualize() {
               background: '#f8fafc'
             }}
           >
-            {/* Search Bar */}
             <div style={{
               position: 'absolute',
               top: '20px',
@@ -707,7 +688,6 @@ export default function Visualize() {
               </div>
             </div>
 
-            {/* Fullscreen Button */}
             <button
               onClick={toggleFullscreen}
               style={{

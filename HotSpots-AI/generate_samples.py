@@ -5,19 +5,16 @@ from shapely.geometry import Point
 
 print("Starting sample generation...")
 
-# 1) Open your rasters
 lst = rasterio.open('HotSpots-AI/data/toronto_lst.tif')
 ndvi = rasterio.open('HotSpots-AI/data/toronto_ndvi.tif')
 print("Loaded LST and NDVI rasters.")
 
-# 2) Load the Building Outlines shapefile
 buildings = (
     gpd.read_file('HotSpots-AI/data/buildings/Building Outlines - 4326.shp')
-       .to_crs(epsg=3857)   # project to meters
+       .to_crs(epsg=3857)  
 )
 print(f"Loaded {len(buildings)} building footprints.")
 
-# 3) Define your 10 sample points
 points = [
     {"id":"cn_tower",        "lon":-79.3871, "lat":43.6426},
     {"id":"queens_park",     "lon":-79.3906, "lat":43.6677},
@@ -35,18 +32,15 @@ print(f"Defined {len(points)} sample points.")
 samples = []
 temps, ndvis, blds = [], [], []
 
-# 4) Loop & sample
 for pt in points:
     lon, lat = pt['lon'], pt['lat']
     print(f"Sampling point '{pt['id']}' at ({lon}, {lat})...")
 
-    # a) LST temperature
     temp = next(lst.sample([(lon, lat)]))[0]
 
-    # b) NDVI
+    
     ndvi_val = next(ndvi.sample([(lon, lat)]))[0]
 
-    # c) Building density in a 100 m buffer
     pt_geo = gpd.GeoSeries([Point(lon, lat)], crs='EPSG:4326') \
                .to_crs(epsg=3857)
     buf = pt_geo.buffer(100).iloc[0]
@@ -54,7 +48,7 @@ for pt in points:
     area = nearby.geometry.intersection(buf).area.sum()
     bld_density = area / buf.area
 
-    print(f"  → temp: {temp:.2f}, ndvi: {ndvi_val:.4f}, bldDensity: {bld_density:.4f}")
+    print(f"  temp: {temp:.2f}, ndvi: {ndvi_val:.4f}, bldDensity: {bld_density:.4f}")
 
     temps.append(float(temp))
     ndvis.append(float(ndvi_val))
@@ -68,7 +62,6 @@ for pt in points:
         "bldDensity": float(bld_density)
     })
 
-# 5) Normalize & compute initial vulnerability (w1=w2=w3=1)
 print("Normalizing metrics and computing initial vulnerability scores...")
 def normalize(arr):
     mn, mx = min(arr), max(arr)
@@ -80,8 +73,7 @@ for i, s in enumerate(samples):
 
 print("Vulnerability scores computed.")
 
-# 6) Write samples.json
 with open('samples.json', 'w') as f:
     json.dump(samples, f, indent=2)
 
-print(f"✔ samples.json generated with {len(samples)} samples.")
+print(f"samples.json generated with {len(samples)} samples.")

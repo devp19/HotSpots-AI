@@ -1,4 +1,3 @@
-// File: tuneWeightsGemini.js
 import { createRequire } from 'module';
 import { GoogleGenAI }   from '@google/genai';
 
@@ -29,18 +28,14 @@ Respond with JSON exactly like: { "w1": 0.5, "w2": 0.3, "w3": 0.2 }.
       }
     });
 
-    // 1) Inspect raw response
     console.log('Full API response:', JSON.stringify(response, null, 2));
 
-    // 2) Extract text (with fences)
     let text = response.text;
     console.log('Raw text reply:\n', text);
 
-    // 3) Strip markdown fences ``` or ```json
     text = text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
     console.log('Cleaned JSON text:\n', text);
 
-    // 4) Parse JSON
     const weights = JSON.parse(text);
     console.log('➜ New weights:', weights);
 

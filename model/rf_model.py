@@ -2,7 +2,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score, mean_absolute_error
 import numpy as np
 
-# Sample data (10 points)
+#sampel data putting 10 for nwo cuz more than ~15 consuming too many API creds
 samples = [
     {"temp": 26.59, "ndvi": -0.0029, "bldDensity": 0.4956, "currentV": 1.17},
     {"temp": 29.79, "ndvi":  0.0777, "bldDensity": 0.9961, "currentV": 1.71},
@@ -16,7 +16,6 @@ samples = [
     {"temp": 14.65, "ndvi":  0.0421, "bldDensity": 0.0343, "currentV": -0.08},
 ]
 
-# Normalize to [0,1]
 def normalize(arr):
     mn, mx = min(arr), max(arr)
     return [(v - mn)/(mx-mn) for v in arr]
@@ -33,15 +32,17 @@ nB = normalize(blds)
 X = np.column_stack([nT, nN, nB])
 y = np.array(targets)
 
-# Train a very shallow Random Forest to intentionally underfit
 model = RandomForestRegressor(n_estimators=50, max_depth=1, random_state=0)
 model.fit(X, y)
 
-# Evaluate
 y_pred = model.predict(X)
 r2  = r2_score(y, y_pred)
 mae = mean_absolute_error(y, y_pred)
 importances = model.feature_importances_
+
+
+#r2 score measuring models perfmrance in a 0..1 metric range. 
+# linear regres was gving liek 0.46, random forest is gving much better results
 
 print(f"R² score: {r2:.2f}")
 print(f"MAE: {mae:.2f}")

@@ -1,4 +1,3 @@
-// File: pages/index.tsx
 'use client';
 
 import { InteractiveHoverButton } from '@/components/magicui/interactive-hover-button';
@@ -31,7 +30,6 @@ import { cn } from '@/lib/utils';
 import { VelocityScroll } from '@/components/magicui/scroll-based-velocity';
 import { Meteors } from '@/components/magicui/meteors';
 
-// Chart data for heat-related deaths by year
 const heatDeathsData = [
   { year: '', deaths: 250000 },
   { year: "2020", deaths: 410000 },
@@ -102,11 +100,9 @@ const Chip = forwardRef<
 });
 Chip.displayName = "Chip";
 
-// Tooltip delay in ms
 const TOOLTIP_HIDE_DELAY = 300;
 
 export default function Home() {
-  // Refs for animated beam connections
   const containerRef = useRef<HTMLDivElement>(null);
   const input1Ref = useRef<HTMLDivElement>(null);
   const input2Ref = useRef<HTMLDivElement>(null);
@@ -139,9 +135,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-4 sm:px-8 md:px-16 lg:px-32 xl:px-0 max-w-5xl mx-auto relative bg-white text-[#2a2a2a]">
-      {/* Landing Section */}
       <section className="w-full flex flex-col items-center justify-center min-h-screen relative overflow-hidden" style={{padding: '10vw 2vw'}}>
-        {/* Meteors background */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <Meteors number={32} />
         </div>
@@ -201,14 +195,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Text Reveal Section */}
       <section id="text-reveal-section" className="w-full flex flex-col items-center text-center justify-start h-[300vh]">
         <TextReveal className="title text-left">
           {`It's SUPER hot outside. We know. But consider those who are especially vulnerable.`}
         </TextReveal>
       </section>
 
-      {/* Heat Deaths Section */}
       <section className="w-full flex flex-col items-center justify-center min-h-screen text-center max-w-xl mx-auto -mt-272">
         <TextAnimate animation="slideUp" by="word" className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
           489,000 heat-related deaths occur annually.
@@ -218,11 +210,9 @@ export default function Home() {
         </TextAnimate>
       </section>
 
-      {/* Chart and Description Section */}
       <section className="w-full flex flex-col items-center justify-center -mt-64">
         <div className="w-full flex flex-col md:flex-row gap-8 items-center justify-center max-w-4xl mx-auto">
           <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0">
-            {/* Tilted Chart Card */}
             <div className="[perspective:1200px] w-full flex justify-center">
               <Card className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 p-6 w-full max-w-md flex flex-col shadow-xl" style={{ transform: 'rotateY(-8deg) rotateX(6deg)' }}>
                 <CardHeader>
@@ -245,7 +235,6 @@ export default function Home() {
                         axisLine={false}
                         tickMargin={8}
                       />
-                      {/* No YAxis rendered to hide the y axis */}
                       <ChartTooltip
                         cursor={false}
                         content={<ChartTooltipContent indicator="line" />}
@@ -289,7 +278,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* What Did We Do Section */}
       <section
         id="what-we-did-section"
         className="w-full flex flex-col items-center justify-center min-h-[40vh] text-center scroll-mt-8"
@@ -303,7 +291,6 @@ export default function Home() {
         <p className="text-lg text-[#444] mb-8 mt-2">
           TLDR; Check for trees and building density around a specific location. Mix it in with temperatures and some special ML magic and you get a heat vulnerability score.
         </p>
-        {/* ML Flow Diagram Section (MagicUI Demo Structure) */}
         <div className="-ml-20 w-full">
           <AnimatedBeamMultipleOutputDemo />
         </div>
@@ -323,18 +310,14 @@ export default function Home() {
             </div>
           </div>
         </div>
-        {/* Scroll-based velocity section */}
         <div className="w-full my-12 relative mt-40 mb-40" style={{ minHeight: '4.5rem' }}>
-          {/* Left fade */}
           <div className="pointer-events-none absolute top-0 left-0 h-full w-12 z-10" style={{ background: 'linear-gradient(to right, white 80%, transparent)' }} />
-          {/* Right fade */}
           <div className="pointer-events-none absolute top-0 right-0 h-full w-12 z-1" style={{ background: 'linear-gradient(to left, white 80%, transparent)' }} />
           <VelocityScroll defaultVelocity={6} numRows={2} className="text-[#2a2a2a] relative z-0" >
             Machine Learning Model Dataframes
           </VelocityScroll>
         </div>
 
-        {/* Data Classifications for ML Model section */}
         <section className="w-full flex flex-col items-center justify-center mt-12 max-w-5xl mx-auto px-4">
           <TextAnimate animation="slideUp" by="word" as="h3" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6">
             Data Classifications for ML Model
@@ -373,7 +356,6 @@ export default function Home() {
         </section>
       </section>
 
-      {/* 3D City Visualization CTA section */}
       <section className="w-full flex flex-col items-center justify-center mt-40 mb-16 max-w-lg mx-auto">
         <TextAnimate animation="slideUp" by="word" as="h3" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-center">
           Enough Technical Talk. Check out the 3D City Visualization
@@ -424,7 +406,6 @@ function AnimatedBeamMultipleOutputDemo({ className }: { className?: string }) {
   const outputRef = useRef<HTMLDivElement>(null);
   const geeRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  // Tooltip state and refs
   const [showGeminiTooltip, setShowGeminiTooltip] = useState(false);
   const [showVulnTooltip, setShowVulnTooltip] = useState(false);
   const [showTunedTooltip, setShowTunedTooltip] = useState(false);
@@ -491,7 +472,6 @@ function AnimatedBeamMultipleOutputDemo({ className }: { className?: string }) {
               </svg>
               <span className="text-sm">Google Earth Engine</span>
             </Rectangle>
-            {/* Tooltip for Google Earth Engine */}
             {showGeeTooltip && (
               <div className="absolute left-1/2 top-0 z-50 flex flex-col items-center" style={{ transform: 'translate(-50%, -120%)' }}>
                 <div className="bg-white border border-[#888] rounded-lg shadow-lg p-6 max-w-xs w-[320px] text-left">
@@ -521,7 +501,6 @@ function AnimatedBeamMultipleOutputDemo({ className }: { className?: string }) {
               <Settings className="w-7 h-7 mb-1 text-[#f86d10]" />
               Vulnerability ML-Model
             </Rectangle>
-            {/* Tooltip for Vulnerability Engine */}
             {showVulnTooltip && (
               <div className="absolute left-1/2 top-0 z-50 flex flex-col items-center" style={{ transform: 'translate(-50%, -120%)' }}>
                 <div className="bg-white border border-[#888] rounded-lg shadow-lg p-6 max-w-xs w-[260px] text-left">
@@ -549,7 +528,6 @@ function AnimatedBeamMultipleOutputDemo({ className }: { className?: string }) {
               <Cpu className="w-10 h-10 text-[#f86d10]" />
             </Rectangle>
             <div className="mt-2 text-center text-xs font-semibold text-[#f86d10]">Gemini-2.5-Flash Tuner</div>
-            {/* Tooltip for Gemini */}
             {showGeminiTooltip && (
               <div className="absolute left-1/2 top-0 z-50 flex flex-col items-center"
                    style={{ transform: 'translate(-50%, -120%)' }}>
@@ -631,7 +609,6 @@ Cleaned JSON text:
 }`}
               </pre>
             </Rectangle>
-            {/* Tooltip for Tuned Weights */}
             {showTunedTooltip && (
               <div className="absolute left-1/2 top-0 z-50 flex flex-col items-center" style={{ transform: 'translate(-50%, -120%)' }}>
                 <div className="bg-white border border-[#888] rounded-lg shadow-lg p-6 max-w-xs w-[260px] text-left">

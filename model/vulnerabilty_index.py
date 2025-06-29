@@ -6,43 +6,32 @@ import geopandas as gpd
 import numpy as np
 from shapely.geometry import Point
 
-# ───────────────────────────────────────────────
-# CONFIGURATION
-# ───────────────────────────────────────────────
-# 1) Bounding box of Toronto [minLon, minLat, maxLon, maxLat]
+# bounding box of toronto, gpt gave this 
 bbox = (-79.6393, 43.4955, -79.1152, 43.8555)
 
-# 2) Number of points to sample
-N_POINTS = 1500   # tweak for desired resolution
+N_POINTS = 1500   
 
-# 3) Tuned weights from Gemini
+#tuend weights givne from gemini api call. seems to be a good balance of temp, ndvi, and bldDensity
 W1, W2, W3 = 0.6, 0.2, 0.2
 
-# 4) Filepaths
 LST_TIF   = 'HotSpots-AI/data/toronto_lst.tif'
 NDVI_TIF  = 'HotSpots-AI/data/toronto_ndvi.tif'
 BUILD_SHP = 'HotSpots-AI/data/buildings/Building Outlines - 4326.shp'
 
-# 5) Output
+
 OUTPUT_GEOJSON = 'HotSpots-AI/data/vulnerability_points.geojson'
 
 
-# ───────────────────────────────────────────────
-# LOAD DATA SOURCES
-# ───────────────────────────────────────────────
 print("Loading rasters and building footprints…")
 lst_src  = rasterio.open(LST_TIF)
 ndvi_src = rasterio.open(NDVI_TIF)
 buildings = (
     gpd.read_file(BUILD_SHP)
-       .to_crs(epsg=3857)      # project to meters for area/buffer
+       .to_crs(epsg=3857) 
 )
 print(f"Loaded {len(buildings)} building polygons.")
 
 
-# ───────────────────────────────────────────────
-# SAMPLE POINT GENERATION & METRIC HARVEST
-# ───────────────────────────────────────────────
 print(f"Generating {N_POINTS} random points…")
 minx, miny, maxx, maxy = bbox
 points = []
@@ -56,13 +45,10 @@ features = []
 
 print("Sampling metrics for each point…")
 for lon, lat in points:
-    # 1) Temperature
     temp = next(lst_src.sample([(lon, lat)]))[0]
 
-    # 2) NDVI
     ndvi = next(ndvi_src.sample([(lon, lat)]))[0]
 
-    # 3) Building density in 100 m buffer
     pt = gpd.GeoSeries([Point(lon, lat)], crs='EPSG:4326')\
              .to_crs(epsg=3857)
     circle = pt.buffer(100).iloc[0]
@@ -70,12 +56,10 @@ for lon, lat in points:
     area_sum  = pts_build.geometry.intersection(circle).area.sum()
     density   = float(area_sum / circle.area)
 
-    # collect for normalization
     temps.append(float(temp))
     ndvis.append(float(ndvi))
     blds.append(density)
 
-    # temporarily store raw values in the feature
     features.append({
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates": [lon, lat] },
@@ -86,9 +70,7 @@ for lon, lat in points:
       }
     })
 
-# ───────────────────────────────────────────────
-# NORMALIZE & COMPUTE VULNERABILITY
-# ───────────────────────────────────────────────
+
 print("Normalizing metrics and computing vulnerability…")
 def normalize(arr):
     mn, mx = min(arr), max(arr)
@@ -102,12 +84,10 @@ for i, feat in enumerate(features):
     V = W1*nT[i] - W2*nN[i] + W3*nB[i]
     feat["properties"]["vulnerability"] = float(V)
 
-# ───────────────────────────────────────────────
-# EXPORT GEOJSON
-# ───────────────────────────────────────────────
+
 print(f"Writing {len(features)} features to {OUTPUT_GEOJSON} …")
 geojson = { "type": "FeatureCollection", "features": features }
 with open(OUTPUT_GEOJSON, 'w') as f:
     json.dump(geojson, f, indent=2)
 
-print("✅ Done! Load 'vulnerability_points.geojson' into Mapbox.")
+print("Done! Load 'vulnerability_points.geojson' into Mapbox.")
