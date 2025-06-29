@@ -67,8 +67,6 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -103,6 +101,8 @@
   --color-3: oklch(69.6% 0.165 251);
   --color-4: oklch(80.2% 0.134 225);
   --color-5: oklch(90.7% 0.231 133);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
 }
 
 .dark {
@@ -151,4 +151,35 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@font-face {
+  font-family: 'Neue';
+  src: url('../../public/fonts/NeueHaasDisplayMediu.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.title {
+  font-family: 'Neue';
+  color: #181818;
+  font-size: 5rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
+  text-rendering: optimizeLegibility;
+}
+
+.viz-btn {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1.2px solid #2a2a2a;
+  transition: background 0.2s, color 0.2s;
+}
+.viz-btn:hover, .viz-btn:focus {
+  background: #fff;
+  color: #181818;
 }

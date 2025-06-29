@@ -1,233 +1,99 @@
 // File: pages/index.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import DeckGL from '@deck.gl/react';
-import { HeatmapLayer } from '@deck.gl/aggregation-layers';
-import { ScatterplotLayer } from '@deck.gl/layers';
-import StaticMap, { NavigationControl } from 'react-map-gl';
-
-const INITIAL_VIEW_STATE = {
-  latitude: 43.6532,
-  longitude: -79.3832,
-  zoom: 14.5,
-  pitch: 60,
-  bearing: 0,
-};
-
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-
-type PointData = {
-  position: [number, number];
-  weight: number;
-  ndvi?: number;
-  bldDensity?: number;
-  vulnerability?: number;
-};
-
-type TooltipInfo = {
-  x: number;
-  y: number;
-  ndvi: number;
-  bldDensity: number;
-  vulnerability: number;
-} | null;
+import { InteractiveHoverButton } from '@/components/magicui/interactive-hover-button';
+import { AnimatedSubscribeButton } from '@/components/magicui/animated-subscribe-button';
+import { TextAnimate } from '@/components/magicui/text-animate';
+import { motion } from 'framer-motion';
 
 export default function Home() {
-  const [data, setData] = useState<PointData[]>([]);
-  const [mode, setMode] = useState<'gradient' | 'circle'>('gradient');
-  const [tooltip, setTooltip] = useState<TooltipInfo>(null);
-  const [quantiles, setQuantiles] = useState<{q1: number, q2: number}>({q1: 0.33, q2: 0.66});
-
-  // Fetch vulnerability points only
-  useEffect(() => {
-    fetch('/vulnerability_points.geojson')
-      .then((res) => res.json())
-      .then((geojson) => {
-        const pts: PointData[] = geojson.features.map((f: any) => ({
-          position: f.geometry.coordinates,
-          weight: f.properties.vulnerability,
-          ndvi: f.properties.ndvi,
-          bldDensity: f.properties.bldDensity,
-          vulnerability: f.properties.vulnerability,
-        }));
-        setData(pts);
-        // Compute quantiles for coloring
-        if (pts.length > 0) {
-          const sorted = [...pts].sort((a, b) => a.weight - b.weight);
-          const q1 = sorted[Math.floor(0.33 * sorted.length)]?.weight ?? 0.33;
-          const q2 = sorted[Math.floor(0.66 * sorted.length)]?.weight ?? 0.66;
-          setQuantiles({ q1, q2 });
-        }
-      })
-      .catch(console.error);
-  }, []);
-
-  // Heatmap layer (gradient)
-  const heatmapLayer = new HeatmapLayer<PointData>({
-    id: 'hot-spots-heatmap',
-    data,
-    getPosition: (d) => d.position,
-    getWeight: (d) => d.weight,
-    radiusPixels: 600,
-    intensity: 1,
-    threshold: 0.1,
-    colorRange: [
-      [0, 255, 255, 0],
-      [0, 255, 255, 50],
-      [0, 200, 255, 100],
-      [100, 255, 0, 150],
-      [255, 255, 0, 200],
-      [255, 140, 0, 220],
-      [255, 0, 0, 255],
-    ],
-    colorDomain: [0, Math.max(...data.map((d) => d.weight), 1)],
-  });
-
-  // 2D circle layer (Scatterplot)
-  const scatterLayer = new ScatterplotLayer<PointData>({
-    id: 'hot-spots-circles',
-    data,
-    getPosition: (d) => d.position,
-    getRadius: (d) => 80 + 200 * d.weight, // scale by vulnerability
-    getFillColor: (d) => {
-      const v = d.weight;
-      if (v < quantiles.q1) return [255, 255, 0, 180]; // yellow
-      if (v < quantiles.q2) return [255, 165, 0, 200]; // orange
-      return [255, 100, 0, 220]; // dark orange
-    },
-    pickable: true,
-    radiusMinPixels: 4,
-    radiusMaxPixels: 40,
-    stroked: false,
-    filled: true,
-    onHover: info => {
-      if (info && info.object) {
-        setTooltip({
-          x: info.x,
-          y: info.y,
-          ndvi: info.object.ndvi ?? 0,
-          bldDensity: info.object.bldDensity ?? 0,
-          vulnerability: info.object.vulnerability ?? info.object.weight ?? 0,
-        });
-      } else {
-        setTooltip(null);
-      }
-    },
-  });
-
-  // 3D buildings extrusion (unchanged)
-  const handleMapLoad = useCallback((event: any) => {
-    const map = event.target;
-    map.once('style.load', () => {
-      const layers = map.getStyle().layers || [];
-      const labelLayerId = layers.find(
-        (layer: any) =>
-          layer.type === 'symbol' &&
-          layer.layout &&
-          layer.layout['text-field']
-      )?.id;
-
-      if (map.getLayer('3d-buildings')) {
-        map.removeLayer('3d-buildings');
-      }
-
-      map.addLayer(
-        {
-          id: '3d-buildings',
-          source: 'composite',
-          'source-layer': 'building',
-          filter: ['==', 'extrude', 'true'],
-          type: 'fill-extrusion',
-          minzoom: 14,
-          paint: {
-            'fill-extrusion-color': '#aaa',
-            'fill-extrusion-height': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              14,
-              0,
-              14.05,
-              ['get', 'height'],
-            ],
-            'fill-extrusion-base': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              14,
-              0,
-              14.05,
-              ['get', 'min_height'],
-            ],
-            'fill-extrusion-opacity': 0.9,
-          },
-        },
-        labelLayerId
-      );
-    });
-  }, []);
-
   return (
-    <div style={{ height: '100vh', width: '100vw', background: '#000', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, display: 'flex', gap: 12 }}>
-        <button
-          style={{
-            background: '#222',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '8px 18px',
-            fontWeight: 600,
-            fontSize: 15,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-            outline: 'none',
-            transition: 'background 0.2s',
-          }}
-          onClick={() => setMode(mode === 'gradient' ? 'circle' : 'gradient')}
-        >
-          {mode === 'gradient' ? 'Visualize Data Points' : 'Show Gradient'}
-        </button>
-      </div>
-      <DeckGL
-        initialViewState={INITIAL_VIEW_STATE}
-        controller
-        layers={[mode === 'gradient' ? heatmapLayer : scatterLayer]}
+    <div
+      style={{
+        minHeight: '100vh',
+        width: '100vw',
+        background: '#fff',
+        color: '#2a2a2a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        padding: '5vw 2vw',
+        boxSizing: 'border-box',
+      }}
+    >
+      <motion.div
+        className="wordmark flex items-center justify-center mt-8 mb-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.1, delay: 0.2 }}
       >
-        <StaticMap
-          mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/standard"
-          onLoad={handleMapLoad}
-          style={{ width: '100%', height: '100%' }}
+        <span className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'NeueHaasDisplay, Neue, sans-serif' }}>H</span>
+        <img
+          src="/firegif2.gif"
+          alt="Fire Icon"
+          style={{
+            width: 32,
+            height: 32,
+            marginBottom: 10,
+            objectFit: 'contain',
+            verticalAlign: 'middle',
+            display: 'inline-block',
+          }}
+        />
+        <span className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'NeueHaasDisplay, Neue, sans-serif' }}>TSpots</span>
+        <span className="text-2xl font-semibold text-[#888]" style={{ fontFamily: 'NeueHaasDisplay, Neue, sans-serif', marginBottom: -3 }}>.ai</span>
+      </motion.div>
+      <motion.h1
+        className="slogan text-6xl sm:text-7xl md:text-8xl font-bold text-center mb-6 mt-3 leading-tight max-w-2xl mx-auto"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1.1, delay: 0.4 }}
+      >
+        Mapping heat, growing green.
+      </motion.h1>
+      <TextAnimate
+        animation="slideUp"
+        by="word"
+        className="text-[15px] mb-8 text-[#444] text-center max-w-[480px]"
+      >
+        Explore urban heat vulnerability and tree planting priorities in Toronto for sustainable development.
+      </TextAnimate>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: 16, marginBottom: 24 }}>
+        <a href="/visualize" style={{ textDecoration: 'none' }}>
+          <InteractiveHoverButton style={{ border: '1.2px solid #2a2a2a' }}>
+            View Visualization
+          </InteractiveHoverButton>
+        </a>
+        <AnimatedSubscribeButton
+          className="bg-black text-white hover:bg-white hover:text-black border border-black transition-colors duration-300 rounded-full px-6 py-2 hover:outline hover:outline-1 hover:outline-black"
         >
-          <NavigationControl position="top-left" />
-        </StaticMap>
-        {/* Tooltip for circle mode */}
-        {mode === 'circle' && tooltip && (
-          <div
-            style={{
-              position: 'absolute',
-              pointerEvents: 'none',
-              left: tooltip.x + 12,
-              top: tooltip.y + 12,
-              background: 'rgba(30,30,30,0.97)',
-              color: '#fff',
-              padding: '8px 14px',
-              borderRadius: 8,
-              fontSize: 14,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-              zIndex: 20,
-              minWidth: 180,
-              lineHeight: 1.5,
-            }}
-          >
-            <div><b>Vulnerability:</b> {tooltip.vulnerability.toFixed(3)}</div>
-            <div><b>NDVI:</b> {tooltip.ndvi.toFixed(3)}</div>
-            <div><b>Building Density:</b> {tooltip.bldDensity.toFixed(3)}</div>
-          </div>
-        )}
-      </DeckGL>
+          <span>Learn More</span>
+          <span>Learn More</span>
+        </AnimatedSubscribeButton>
+      </div>
+      <style jsx global>{`
+        @font-face {
+          font-family: 'NeueHaasDisplay';
+          src: url('/fonts/NeueHaasDisplayMediu.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        @keyframes fire-flicker {
+          0% { transform: scale(1) rotate(-2deg); filter: brightness(1.05); }
+          10% { transform: scale(1.04, 0.98) rotate(2deg); filter: brightness(1.15); }
+          20% { transform: scale(0.98, 1.02) rotate(-1deg); filter: brightness(0.95); }
+          30% { transform: scale(1.03, 0.97) rotate(1deg); filter: brightness(1.1); }
+          40% { transform: scale(1, 1.04) rotate(-2deg); filter: brightness(1.05); }
+          50% { transform: scale(1.05, 0.96) rotate(2deg); filter: brightness(1.2); }
+          60% { transform: scale(0.97, 1.03) rotate(-1deg); filter: brightness(0.9); }
+          70% { transform: scale(1.02, 0.99) rotate(1deg); filter: brightness(1.1); }
+          80% { transform: scale(1, 1.02) rotate(-2deg); filter: brightness(1.05); }
+          90% { transform: scale(1.04, 0.98) rotate(2deg); filter: brightness(1.15); }
+          100% { transform: scale(1) rotate(-2deg); filter: brightness(1.05); }
+        }
+      `}</style>
     </div>
   );
 }
